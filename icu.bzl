@@ -178,7 +178,9 @@ def icu_library():
             'icupkg.inc',
         ],
         cmd = 'true' +
-            ' && CFLAGS="-DU_USING_ICU_NAMESPACE=0 -DU_CHARSET_IS_UTF8=1 -DUNISTR_FROM_CHAR_EXPLICIT=explicit -DUNISTR_FROM_STRING_EXPLICIT=explicit -DU_NO_DEFAULT_INCLUDE_UTF_HEADERS=1" $(location source/runConfigureICU) Linux --with-library-bits=64 &> /dev/null' +
+            # Detect the ARCH used to configure the icu library.
+            ' && if [ `uname` == "Linux" ]; then ARCH=Linux; elif [ `uname` == "Darwin" ]; then ARCH=MacOSX; fi' +
+            ' && CFLAGS="-DU_USING_ICU_NAMESPACE=0 -DU_CHARSET_IS_UTF8=1 -DUNISTR_FROM_CHAR_EXPLICIT=explicit -DUNISTR_FROM_STRING_EXPLICIT=explicit -DU_NO_DEFAULT_INCLUDE_UTF_HEADERS=1" $(location source/runConfigureICU) $$ARCH --with-library-bits=64 &> /dev/null' +
             ' && cd data' +
             ' && make -f pkgdataMakefile &> /dev/null' +
             ' && cd ..' +
@@ -231,7 +233,9 @@ def icu_library():
             ' && $(location :pkgdata) -O $(location icupkg.inc) -q -c -s out/build/icudt59l -d out -e icudt59  -T out/tmp -p icudt59l -m static -r 59.1 -L icudata out/tmp/icudata.lst &> /dev/null' +
             ' && cp out/libicudata.a $(location libicudata.a)' +
             ' && $(location :pkgdata) -O $(location icupkg.inc) -q -c -s out/build/icudt59l -d out -e icudt59  -T out/tmp -p icudt59l -m dll -r 59.1 -L icudata out/tmp/icudata.lst &> /dev/null' +
-            ' && cp -H out/libicudata.so $(location libicudata.so)' +
+            # In MacOSX use .dylib; In Linux use .so.
+            ' && if [ `uname` == "Linux" ]; then DYLIB=so; elif [ `uname` == "Darwin" ]; then DYLIB=dylib; fi' +
+            ' && cp -H out/libicudata.$$DYLIB $(location libicudata.so)' +
             ' && rm -rf out' +
             '',
     )
