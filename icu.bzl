@@ -3,6 +3,9 @@ def icu_library():
     # TODO: Add a version attribute that takes a list of integers.  For version
     # 59.1, the list would be [59, 1].
 
+    # TODO: Use config_settings() and select() to build on both Linux and
+    # Darwin instead of using `uname -r`.
+
     icu_copts = [
         '-fno-exceptions',
         '-Isource/common',
@@ -177,15 +180,15 @@ def icu_library():
         outs = [
             'icupkg.inc',
         ],
-        cmd = 'true' +
+        cmd = ' && '.join([
             # Detect the ARCH used to configure the icu library.
-            ' && if [ `uname` == "Linux" ]; then ARCH=Linux; elif [ `uname` == "Darwin" ]; then ARCH=MacOSX; fi' +
-            ' && CFLAGS="-DU_USING_ICU_NAMESPACE=0 -DU_CHARSET_IS_UTF8=1 -DUNISTR_FROM_CHAR_EXPLICIT=explicit -DUNISTR_FROM_STRING_EXPLICIT=explicit -DU_NO_DEFAULT_INCLUDE_UTF_HEADERS=1" $(location source/runConfigureICU) $$ARCH --with-library-bits=64 &> /dev/null' +
-            ' && cd data' +
-            ' && make -f pkgdataMakefile &> /dev/null' +
-            ' && cd ..' +
-            ' && cp data/icupkg.inc $(location icupkg.inc)' +
-            '',
+            'if [ `uname` == "Linux" ]; then ARCH=Linux; elif [ `uname` == "Darwin" ]; then ARCH=MacOSX; fi',
+            'CFLAGS="-DU_USING_ICU_NAMESPACE=0 -DU_CHARSET_IS_UTF8=1 -DUNISTR_FROM_CHAR_EXPLICIT=explicit -DUNISTR_FROM_STRING_EXPLICIT=explicit -DU_NO_DEFAULT_INCLUDE_UTF_HEADERS=1" $(location source/runConfigureICU) $$ARCH --with-library-bits=64 &> /dev/null',
+            'cd data',
+            'make -f pkgdataMakefile &> /dev/null',
+            'cd ..',
+            'cp data/icupkg.inc $(location icupkg.inc)',
+        ]),
     )
 
     native.genrule(
@@ -202,42 +205,42 @@ def icu_library():
             'libicudata.a',
             'libicudata.so',
         ],
-        cmd = 'true' +
+        cmd = ' && '.join([
             # The 'out' dircectory is a temporary directory.
-            ' && mkdir -p out' +
-            ' && mkdir -p out/build' +
-            ' && mkdir -p out/build/icudt59l' +
-            ' && mkdir -p out/build/icudt59l/curr' +
-            ' && mkdir -p out/build/icudt59l/lang' +
-            ' && mkdir -p out/build/icudt59l/region' +
-            ' && mkdir -p out/build/icudt59l/zone' +
-            ' && mkdir -p out/build/icudt59l/unit' +
-            ' && mkdir -p out/build/icudt59l/brkitr' +
-            ' && mkdir -p out/build/icudt59l/coll' +
-            ' && mkdir -p out/build/icudt59l/rbnf' +
-            ' && mkdir -p out/build/icudt59l/translit' +
-            ' && mkdir -p out/tmp' +
-            ' && mkdir -p out/tmp/curr' +
-            ' && mkdir -p out/tmp/lang' +
-            ' && mkdir -p out/tmp/region' +
-            ' && mkdir -p out/tmp/zone' +
-            ' && mkdir -p out/tmp/unit' +
-            ' && mkdir -p out/tmp/coll' +
-            ' && mkdir -p out/tmp/rbnf' +
-            ' && mkdir -p out/tmp/translit' +
-            ' && mkdir -p out/tmp/brkitr' +
+            'mkdir -p out',
+            'mkdir -p out/build',
+            'mkdir -p out/build/icudt59l',
+            'mkdir -p out/build/icudt59l/curr',
+            'mkdir -p out/build/icudt59l/lang',
+            'mkdir -p out/build/icudt59l/region',
+            'mkdir -p out/build/icudt59l/zone',
+            'mkdir -p out/build/icudt59l/unit',
+            'mkdir -p out/build/icudt59l/brkitr',
+            'mkdir -p out/build/icudt59l/coll',
+            'mkdir -p out/build/icudt59l/rbnf',
+            'mkdir -p out/build/icudt59l/translit',
+            'mkdir -p out/tmp',
+            'mkdir -p out/tmp/curr',
+            'mkdir -p out/tmp/lang',
+            'mkdir -p out/tmp/region',
+            'mkdir -p out/tmp/zone',
+            'mkdir -p out/tmp/unit',
+            'mkdir -p out/tmp/coll',
+            'mkdir -p out/tmp/rbnf',
+            'mkdir -p out/tmp/translit',
+            'mkdir -p out/tmp/brkitr',
             # Invoke icupkg to unpack the icu data.
-            ' && $(location :icupkg) -d out/build/icudt59l --list -x \* $(location source/data/in/icudt59l.dat) -o out/tmp/icudata.lst' +
+            '$(location :icupkg) -d out/build/icudt59l --list -x \* $(location source/data/in/icudt59l.dat) -o out/tmp/icudata.lst',
             # Invoke pkgdata to package the unpacked icu data into c++ libraries
             # that can be linked against.
-            ' && $(location :pkgdata) -O $(location icupkg.inc) -q -c -s out/build/icudt59l -d out -e icudt59  -T out/tmp -p icudt59l -m static -r 59.1 -L icudata out/tmp/icudata.lst &> /dev/null' +
-            ' && cp out/libicudata.a $(location libicudata.a)' +
-            ' && $(location :pkgdata) -O $(location icupkg.inc) -q -c -s out/build/icudt59l -d out -e icudt59  -T out/tmp -p icudt59l -m dll -r 59.1 -L icudata out/tmp/icudata.lst &> /dev/null' +
+            '$(location :pkgdata) -O $(location icupkg.inc) -q -c -s out/build/icudt59l -d out -e icudt59  -T out/tmp -p icudt59l -m static -r 59.1 -L icudata out/tmp/icudata.lst &> /dev/null',
+            'cp out/libicudata.a $(location libicudata.a)',
+            '$(location :pkgdata) -O $(location icupkg.inc) -q -c -s out/build/icudt59l -d out -e icudt59  -T out/tmp -p icudt59l -m dll -r 59.1 -L icudata out/tmp/icudata.lst &> /dev/null',
             # In MacOSX use .dylib; In Linux use .so.
-            ' && if [ `uname` == "Linux" ]; then DYLIB=so; elif [ `uname` == "Darwin" ]; then DYLIB=dylib; fi' +
-            ' && cp -H out/libicudata.$$DYLIB $(location libicudata.so)' +
-            ' && rm -rf out' +
-            '',
+            'if [ `uname` == "Linux" ]; then DYLIB=so; elif [ `uname` == "Darwin" ]; then DYLIB=dylib; fi',
+            'cp -H out/libicudata.$$DYLIB $(location libicudata.so)',
+            'rm -rf out',
+        ]),
     )
 
     native.cc_library(
