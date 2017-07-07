@@ -6,13 +6,15 @@ def icu_library():
     # TODO: Use config_settings() and select() to build on both Linux and
     # Darwin instead of using `uname -r`.
 
+    icu_src_dir = '/'.join(['.', PACKAGE_NAME, 'source'])
+
     icu_copts = [
         '-fno-exceptions',
-        '-Isource/common',
-        '-Isource/i18n',
-        '-Isource/io',
-        '-Isource/tools/ctestfw',
-        '-Isource/tools/toolutil',
+        '-I%s/common' % icu_src_dir,
+        '-I%s/i18n' % icu_src_dir,
+        '-I%s/io' % icu_src_dir,
+        '-I%s/tools/ctestfw' % icu_src_dir,
+        '-I%s/tools/toolutil' % icu_src_dir,
     ]
 
     icu_linkopts = [
@@ -32,14 +34,14 @@ def icu_library():
             #       third_party/icu/layoutex/LXUtilities.cpp:10:28: \
             #           fatal error: layout/LETypes.h: No such file or directory
             #        #include "layout/LETypes.h"
-            #'layoutex/**/*.c',
-            #'layoutex/**/*.cpp',
+            'layoutex/**/*.c',
+            'layoutex/**/*.cpp',
         ]),
         hdrs = native.glob([
             'source/common/**/*.h',
             'source/io/**/*.h',
             'source/i18n/**/*.h',
-            #'layoutex/**/*.h',
+            'layoutex/**/*.h',
         ]),
         includes = [
             # Use this 'includes' directive to
