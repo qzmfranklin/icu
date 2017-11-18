@@ -49,6 +49,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <limits>
+#include <locale.h>
 
 #if !defined(U_USE_STRTOD_L)
 # if U_PLATFORM_USES_ONLY_WIN32_API

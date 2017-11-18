@@ -19,6 +19,7 @@ icu_copts = [
 
 icu_linkopts = [
     '-ldl',
+    '-lm',
 ]
 
 native.cc_library(
@@ -140,6 +141,7 @@ native.cc_binary(
         ':stubdata',
     ],
     copts = icu_copts,
+    linkopts = icu_linkopts,
 )
 
 native.cc_binary(
@@ -154,6 +156,7 @@ native.cc_binary(
         ':stubdata',
     ],
     copts = icu_copts,
+    linkopts = icu_linkopts,
 )
 
 native.cc_library(
