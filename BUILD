@@ -22,6 +22,10 @@ package(default_visibility=['//visibility:__pkg__'])
 # TODO: Use config_settings() and select() to build on both Linux and
 # Darwin instead of using `uname -r`.
 
+# TODO: A lot of of options are probably not optimal any more.  Should find a
+# time to read through the recommended configurations and update to the best
+# practice as of that time.
+
 icu_major_version = 60
 icu_minor_version = 2
 
@@ -34,6 +38,10 @@ icu_copts = [
     '-I%s/io' % icu_src_dir,
     '-I%s/tools/ctestfw' % icu_src_dir,
     '-I%s/tools/toolutil' % icu_src_dir,
+
+    # Suppress known warnings.
+    '-Wno-deprecated-declarations',
+    '-Wno-sign-compare',
 ]
 
 icu_linkopts = [
