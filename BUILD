@@ -1,10 +1,29 @@
 licenses(['notice'])
+package(default_visibility=['//visibility:__pkg__'])
 
-# TODO: Add a version attribute that takes a list of integers.  For version
-# 59.1, the list would be [59, 1].
+# How to write this BUILD file and update it?
+#
+# Download the icu4c source code from a tarball. Extract it. Then go through the
+# normal build process:
+#       cd source
+#       ./configure
+#       make -j8 &> build.log
+#
+# The file, build.log, should contain all information we need to transcribe the
+# build of icu4c into Bazel.
+#
+# High level build instructions:
+#       http://userguide.icu-project.org/howtouseicu
+#
+# The recommended compilation configurations:
+#       http://source.icu-project.org/repos/icu/trunk/icu4c/readme.html#RecBuild
+#
 
 # TODO: Use config_settings() and select() to build on both Linux and
 # Darwin instead of using `uname -r`.
+
+icu_major_version = 60
+icu_minor_version = 2
 
 icu_src_dir = '/'.join(['.', PACKAGE_NAME, 'source'])
 
@@ -37,15 +56,18 @@ native.cc_library(
         #        #include "layout/LETypes.h"
         'layoutex/**/*.c',
         'layoutex/**/*.cpp',
-    ]),
-    hdrs = native.glob([
+
         'source/common/**/*.h',
         'source/io/**/*.h',
         'source/i18n/**/*.h',
         'layoutex/**/*.h',
+    ], exclude = [
+        'source/common/unicode/*.h',
+    ]),
+    hdrs = native.glob([
+        'source/common/unicode/*.h',
     ]),
     includes = [
-        # Use this 'includes' directive to
         'source/common',
         'source/i18n',
         'source/io',
@@ -53,7 +75,8 @@ native.cc_library(
         'source/tools/toolutil',
     ],
     defines = [
-        # Officially recommended settings.
+        # Starting from ICU 61, the `using namespace icu` is removed by default,
+        # rendering the U_USING_ICU_NAMESPACE macro unnecessary.
         'U_USING_ICU_NAMESPACE=0',
         'U_CHARSET_IS_UTF8=1',
         'U_NO_DEFAULT_INCLUDE_UTF_HEADERS=1',
@@ -199,7 +222,7 @@ native.genrule(
 native.genrule(
     name = 'libicudata',
     srcs = [
-        'source/data/in/icudt59l.dat',
+        'source/data/in/icudt%dl.dat' % icu_major_version,
         'icupkg.inc',
     ],
     tools = [
@@ -214,16 +237,16 @@ native.genrule(
         # The 'out' dircectory is a temporary directory.
         'mkdir -p out',
         'mkdir -p out/build',
-        'mkdir -p out/build/icudt59l',
-        'mkdir -p out/build/icudt59l/curr',
-        'mkdir -p out/build/icudt59l/lang',
-        'mkdir -p out/build/icudt59l/region',
-        'mkdir -p out/build/icudt59l/zone',
-        'mkdir -p out/build/icudt59l/unit',
-        'mkdir -p out/build/icudt59l/brkitr',
-        'mkdir -p out/build/icudt59l/coll',
-        'mkdir -p out/build/icudt59l/rbnf',
-        'mkdir -p out/build/icudt59l/translit',
+        'mkdir -p out/build/icudt%dl' % icu_major_version,
+        'mkdir -p out/build/icudt%dl/curr' % icu_major_version,
+        'mkdir -p out/build/icudt%dl/lang' % icu_major_version,
+        'mkdir -p out/build/icudt%dl/region' % icu_major_version,
+        'mkdir -p out/build/icudt%dl/zone' % icu_major_version,
+        'mkdir -p out/build/icudt%dl/unit' % icu_major_version,
+        'mkdir -p out/build/icudt%dl/brkitr' % icu_major_version,
+        'mkdir -p out/build/icudt%dl/coll' % icu_major_version,
+        'mkdir -p out/build/icudt%dl/rbnf' % icu_major_version,
+        'mkdir -p out/build/icudt%dl/translit' % icu_major_version,
         'mkdir -p out/tmp',
         'mkdir -p out/tmp/curr',
         'mkdir -p out/tmp/lang',
@@ -235,13 +258,14 @@ native.genrule(
         'mkdir -p out/tmp/translit',
         'mkdir -p out/tmp/brkitr',
         # Invoke icupkg to unpack the icu data.
-        '$(location :icupkg) -d out/build/icudt59l --list -x \* $(location source/data/in/icudt59l.dat) -o out/tmp/icudata.lst',
+        '$(location :icupkg) -d out/build/icudt{0}l --list -x \* $(location source/data/in/icudt{0}l.dat) -o out/tmp/icudata.lst'.format(icu_major_version),
         # Invoke pkgdata to package the unpacked icu data into c++ libraries
         # that can be linked against.
-        '$(location :pkgdata) -O $(location icupkg.inc) -q -c -s out/build/icudt59l -d out -e icudt59  -T out/tmp -p icudt59l -m static -r 59.1 -L icudata out/tmp/icudata.lst &> /dev/null',
+        '$(location :pkgdata) -O $(location icupkg.inc) -q -c -s out/build/icudt{0}l -d out -e icudt{0}  -T out/tmp -p icudt{0}l -m static -r {0}.{1} -L icudata out/tmp/icudata.lst &> /dev/null'.format(icu_major_version, icu_minor_version),
         'cp out/libicudata.a $(location libicudata.a)',
-        '$(location :pkgdata) -O $(location icupkg.inc) -q -c -s out/build/icudt59l -d out -e icudt59  -T out/tmp -p icudt59l -m dll -r 59.1 -L icudata out/tmp/icudata.lst &> /dev/null',
+        '$(location :pkgdata) -O $(location icupkg.inc) -q -c -s out/build/icudt{0}l -d out -e icudt{0}  -T out/tmp -p icudt{0}l -m dll -r {0}.{1} -L icudata out/tmp/icudata.lst &> /dev/null'.format(icu_major_version, icu_minor_version),
         # In MacOSX use .dylib; In Linux use .so.
+        # TODO (zhongming): This is a super hacky hack!
         'if [ `uname` == "Linux" ]; then DYLIB=so; elif [ `uname` == "Darwin" ]; then DYLIB=dylib; fi',
         'cp -H out/libicudata.$$DYLIB $(location libicudata.so)',
         'rm -rf out',
